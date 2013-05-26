@@ -18,7 +18,7 @@
 #define IPOD_LIBRARY_RESPONSE_KEY @(0xFEFD)
 #define IPOD_NOW_PLAYING_KEY @(0xFEFA)
 #define IPOD_REQUEST_PARENT_KEY @(0xFEF9)
-#define IPOD_REQUEST_PARENT_INDEX_KEY @(0xFEF8)
+#define IPOD_PLAY_TRACK_KEY @(0xFEF8)
 
 #define MAX_LABEL_LENGTH 20
 #define MAX_RESPONSE_COUNT 15
@@ -96,7 +96,9 @@
 
 - (void)watch:(PBWatch *)watch receivedMessage:(NSDictionary *)message {
     NSLog(@"Received message: %@", message);
-    if(message[IPOD_REQUEST_LIBRARY_KEY]) {
+    if(message[IPOD_PLAY_TRACK_KEY]) {
+        [self watch:watch playTrackFromMessage:message];
+    } else if(message[IPOD_REQUEST_LIBRARY_KEY]) {
         if(message[IPOD_REQUEST_PARENT_KEY]) {
             [self watch:watch wantsSubList:message];
         } else {
@@ -105,6 +107,14 @@
     } else if(message[IPOD_NOW_PLAYING_KEY]) {
         [self pushNowPlayingItemToWatch:watch];
     }
+}
+
+- (void)watch:(PBWatch*)watch playTrackFromMessage:(NSDictionary *)message {
+    MPMediaItemCollection *queue = [self getCollectionFromMessage:message][0];
+    MPMediaItem *track = [queue items][[message[IPOD_PLAY_TRACK_KEY] int16Value]];
+    [music_player setQueueWithItemCollection:queue];
+    [music_player setNowPlayingItem:track];
+    [music_player play];
 }
 
 - (void)watch:(PBWatch *)watch wantsLibraryData:(NSDictionary *)request {
@@ -117,7 +127,7 @@
     [self pushLibraryResults:results withOffset:offset toWatch:watch type:request_type];
 }
 
-- (void)watch:(PBWatch*)watch wantsSubList:(NSDictionary*)request {
+- (NSArray*)getCollectionFromMessage:(NSDictionary*)request {
     // Find what we're subsetting by iteratively grabbing the sets.
     MPMediaItemCollection *collection = nil;
     MPMediaGrouping parent_type;
@@ -140,7 +150,7 @@
         }
         if(parent_index >= [[query collections] count]) {
             NSLog(@"Out of bounds: %d", parent_index);
-            return;
+            return nil;
         }
         collection = [query collections][parent_index];
         id_prop = [MPMediaItem persistentIDPropertyForGroupingType:parent_type];
@@ -148,21 +158,25 @@
     }
     
     // Complete the lookup
-    NSArray *results;
     NSUInteger request_type = [request[IPOD_REQUEST_LIBRARY_KEY] unsignedIntegerValue];
-    NSUInteger offset = [request[IPOD_REQUEST_OFFSET_KEY] integerValue];
     if(request_type == MPMediaGroupingTitle) {
-        results = [collection items];
+        return @[collection];
     } else {
-        //NSString *id_prop = [MPMediaItem persistentIDPropertyForGroupingType:parent_type];
-        //NSString *persistent_id = [[collection representativeItem] valueForProperty:id_prop];
         NSLog(@"Got persistent ID: %@", persistent_id);
-        // Now do the actual lookup.
         MPMediaQuery *query = [[MPMediaQuery alloc] init];
         [query setGroupingType:request_type];
         [query addFilterPredicate:[MPMediaPropertyPredicate predicateWithValue:persistent_id forProperty:id_prop]];
         [query addFilterPredicate:[MPMediaPropertyPredicate predicateWithValue:@(MPMediaTypeMusic) forProperty:MPMediaItemPropertyMediaType]];
-        results = [query collections];
+        return [query collections];
+    }
+}
+
+- (void)watch:(PBWatch*)watch wantsSubList:(NSDictionary*)request {
+    NSArray *results = [self getCollectionFromMessage:request];
+    MPMediaGrouping request_type = [request[IPOD_REQUEST_LIBRARY_KEY] integerValue];
+    uint16_t offset = [request[IPOD_REQUEST_OFFSET_KEY] uint16Value];
+    if(request_type == MPMediaGroupingTitle) {
+        results = [results[0] items];
     }
     [self pushLibraryResults:results withOffset:offset toWatch:watch type:request_type];
 }

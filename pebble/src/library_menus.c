@@ -23,6 +23,7 @@ static int8_t menu_stack_pointer;
 static AppMessageCallbacksNode app_callbacks;
 
 static bool send_library_request(MPMediaGrouping grouping, uint32_t offset);
+static bool play_track(uint16_t index);
 static void received_message(DictionaryIterator *received, void* context);
 // Menu callbacks
 static uint16_t get_num_rows(MenuLayer* layer, uint16_t section_index, void* context);
@@ -42,11 +43,7 @@ void init_library_menus() {
     menu_stack_pointer = -1;
 }
 
-static bool send_library_request(MPMediaGrouping grouping, uint32_t offset) {
-    DictionaryIterator *iter;
-    if(app_message_out_get(&iter) != APP_MSG_OK) goto failed;
-    dict_write_uint8(iter, IPOD_REQUEST_LIBRARY_KEY, grouping);
-    dict_write_uint32(iter, IPOD_REQUEST_OFFSET_KEY, offset);
+static bool build_parent_history(DictionaryIterator *iter) {
     if(menu_stack_pointer > 0) {
         // Pack up the parent stuff.
         uint8_t parents[MENU_STACK_DEPTH*3+1];
@@ -56,8 +53,34 @@ static bool send_library_request(MPMediaGrouping grouping, uint32_t offset) {
             parents[i*3+3] = menu_stack[i].current_selection >> 8;
             parents[i*3+2] = menu_stack[i].current_selection & 0xFF;
         }
-        dict_write_data(iter, IPOD_REQUEST_PARENT_KEY, parents, ARRAY_LENGTH(parents));
+        if(dict_write_data(iter, IPOD_REQUEST_PARENT_KEY, parents, ARRAY_LENGTH(parents)) != DICT_OK) {
+            return false;
+        }
     }
+    return true;
+}
+
+static bool send_library_request(MPMediaGrouping grouping, uint32_t offset) {
+    DictionaryIterator *iter;
+    if(app_message_out_get(&iter) != APP_MSG_OK) goto failed;
+    dict_write_uint8(iter, IPOD_REQUEST_LIBRARY_KEY, grouping);
+    dict_write_uint32(iter, IPOD_REQUEST_OFFSET_KEY, offset);
+    build_parent_history(iter);
+    if(app_message_out_send() != APP_MSG_OK) goto failed;
+    app_message_out_release();
+    return true;
+failed:
+    app_message_out_release();
+    return false;
+}
+
+static bool play_track(uint16_t index) {
+    DictionaryIterator *iter;
+    LibraryMenu* menu = &menu_stack[menu_stack_pointer];
+    if(app_message_out_get(&iter) != APP_MSG_OK) goto failed;
+    dict_write_uint8(iter, IPOD_REQUEST_LIBRARY_KEY, menu->grouping);
+    dict_write_uint16(iter, IPOD_PLAY_TRACK_KEY, menu->current_selection);
+    build_parent_history(iter);
     if(app_message_out_send() != APP_MSG_OK) goto failed;
     app_message_out_release();
     return true;
@@ -181,14 +204,18 @@ static void selection_changed(struct MenuLayer *menu_layer, MenuIndex new_index,
 
 static void select_click(struct MenuLayer *menu_layer, MenuIndex *cell_index, void *callback_context) {
     LibraryMenu *menu = (LibraryMenu*)callback_context;
-    if(menu_stack_pointer + 1 >= MENU_STACK_DEPTH) return;
-    if(menu->grouping != MPMediaGroupingAlbum && menu->grouping != MPMediaGroupingTitle) {
-        if(menu->grouping == MPMediaGroupingGenre) {
-            display_library_view(MPMediaGroupingArtist);
-        } else {
-            display_library_view(MPMediaGroupingAlbum);
-        }
+    if(menu->grouping == MPMediaGroupingTitle) {
+        play_track(cell_index->row);
     } else {
-        display_library_view(MPMediaGroupingTitle);
+        if(menu_stack_pointer + 1 >= MENU_STACK_DEPTH) return;
+        if(menu->grouping != MPMediaGroupingAlbum && menu->grouping != MPMediaGroupingPlaylist) {
+            if(menu->grouping == MPMediaGroupingGenre) {
+                display_library_view(MPMediaGroupingArtist);
+            } else {
+                display_library_view(MPMediaGroupingAlbum);
+            }
+        } else {
+            display_library_view(MPMediaGroupingTitle);
+        }
     }
 }

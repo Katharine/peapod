@@ -43,10 +43,10 @@ static SimpleMenuItem main_menu_items[] = {
         .title = "Genres",
         .callback = open_genre_list,
     },
-    {
-        .title = "All songs",
-        .callback = open_song_list,
-    }
+    //{
+    //    .title = "All songs",
+    //    .callback = open_song_list,
+    //}
 };
 
 static SimpleMenuSection section = {
