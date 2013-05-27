@@ -4,6 +4,7 @@
 #include "pebble_fonts.h"
 #include "common.h"
 #include "library_menus.h"
+#include "now_playing.h"
 
 static char s_now_playing[40];
 
@@ -82,7 +83,10 @@ void main_menu_set_now_playing(char* now_playing) {
 }
 
 static void received_message(DictionaryIterator *received, void* context) {
-    Tuple* tuple = dict_find(received, IPOD_NOW_PLAYING_KEY);
+    Tuple* tuple = dict_find(received, IPOD_NOW_PLAYING_RESPONSE_TYPE_KEY);
+    if(!tuple) return;
+    if(tuple->value->uint8 != NowPlayingTitleArtist) return;
+    tuple = dict_find(received, IPOD_NOW_PLAYING_KEY);
     if(tuple) {
         uint8_t length = tuple->length > 30 ? 30 : tuple->length;
         memcpy(s_now_playing, tuple->value->cstring, length);
@@ -90,7 +94,9 @@ static void received_message(DictionaryIterator *received, void* context) {
     }
 }
 
-static void open_now_playing(int index, void* context) {}
+static void open_now_playing(int index, void* context) {
+    show_now_playing();
+}
 static void open_artist_list(int index, void* context) {
     display_library_view(MPMediaGroupingAlbumArtist);
 }

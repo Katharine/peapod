@@ -1,6 +1,7 @@
 #include "pebble_os.h"
 #include "library_menus.h"
 #include "common.h"
+#include "now_playing.h"
 
 #define MENU_CACHE_COUNT 15
 #define MENU_ENTRY_LENGTH 21
@@ -206,6 +207,7 @@ static void select_click(struct MenuLayer *menu_layer, MenuIndex *cell_index, vo
     LibraryMenu *menu = (LibraryMenu*)callback_context;
     if(menu->grouping == MPMediaGroupingTitle) {
         play_track(cell_index->row);
+        show_now_playing();
     } else {
         if(menu_stack_pointer + 1 >= MENU_STACK_DEPTH) return;
         if(menu->grouping != MPMediaGroupingAlbum && menu->grouping != MPMediaGroupingPlaylist) {

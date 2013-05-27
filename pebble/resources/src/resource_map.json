@@ -1,11 +1,36 @@
-
-{"friendlyVersion": "VERSION",
- "versionDefName": "VERSION",
- "media": [
-	   {
-	    "type":"raw",
-	    "defName":"DUMMY",
-	    "file":"resource_map.json"
-	   }
-	  ]
+{
+    "media": [
+        {
+            "type": "png",
+            "defName": "ICON_VOLUME_UP",
+            "file": "images/volume_up.png"
+        },
+        {
+            "type": "png",
+            "defName": "ICON_VOLUME_DOWN",
+            "file": "images/volume_down.png"
+        },
+        {
+            "type": "png",
+            "defName": "ICON_PLAY",
+            "file": "images/play.png"
+        },
+        {
+            "type": "png",
+            "defName": "ICON_PAUSE",
+            "file": "images/pause.png"
+        },
+        {
+            "type": "png",
+            "defName": "ICON_FAST_FORWARD",
+            "file": "images/ff.png"
+        },
+        {
+            "type": "png",
+            "defName": "ICON_REWIND",
+            "file": "images/rw.png"
+        }
+    ],
+    "friendlyVersion": "VERSION",
+    "versionDefName": "APP_RESOURCES"
 }

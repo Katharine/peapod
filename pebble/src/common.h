@@ -8,6 +8,9 @@
 #define IPOD_NOW_PLAYING_KEY 0xFEFA
 #define IPOD_REQUEST_PARENT_KEY 0xFEF9
 #define IPOD_PLAY_TRACK_KEY 0xFEF8
+#define IPOD_NOW_PLAYING_RESPONSE_TYPE_KEY 0xFEF7
+#define IPOD_ALBUM_ART_KEY 0xFEF6
+#define IPOD_STATE_CHANGE_KEY 0xFEF5
 
 typedef enum {
     MPMediaGroupingTitle,
@@ -19,5 +22,12 @@ typedef enum {
     MPMediaGroupingPlaylist,
     MPMediaGroupingPodcastTitle,
 } MPMediaGrouping;
+
+typedef enum {
+    NowPlayingTitle,
+    NowPlayingArtist,
+    NowPlayingAlbum,
+    NowPlayingTitleArtist
+} NowPlayingType;
 
 #endif

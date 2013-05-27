@@ -27,6 +27,8 @@
 		3328FC301750FA4100C38C1A /* MessageUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3328FC2F1750FA4100C38C1A /* MessageUI.framework */; };
 		3328FC321750FADD00C38C1A /* MediaPlayer.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3328FC311750FADD00C38C1A /* MediaPlayer.framework */; };
 		3328FC351750FAFE00C38C1A /* KBiPodRemote.m in Sources */ = {isa = PBXBuildFile; fileRef = 3328FC341750FAFE00C38C1A /* KBiPodRemote.m */; };
+		3328FC5017534A5D00C38C1A /* KBPebbleMessageQueue.m in Sources */ = {isa = PBXBuildFile; fileRef = 3328FC4F17534A5D00C38C1A /* KBPebbleMessageQueue.m */; };
+		3328FC53175351C300C38C1A /* KBPebbleImage.m in Sources */ = {isa = PBXBuildFile; fileRef = 3328FC52175351C300C38C1A /* KBPebbleImage.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -56,6 +58,10 @@
 		3328FC311750FADD00C38C1A /* MediaPlayer.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MediaPlayer.framework; path = System/Library/Frameworks/MediaPlayer.framework; sourceTree = SDKROOT; };
 		3328FC331750FAFE00C38C1A /* KBiPodRemote.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = KBiPodRemote.h; sourceTree = "<group>"; };
 		3328FC341750FAFE00C38C1A /* KBiPodRemote.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = KBiPodRemote.m; sourceTree = "<group>"; };
+		3328FC4E17534A5D00C38C1A /* KBPebbleMessageQueue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = KBPebbleMessageQueue.h; sourceTree = "<group>"; };
+		3328FC4F17534A5D00C38C1A /* KBPebbleMessageQueue.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = KBPebbleMessageQueue.m; sourceTree = "<group>"; };
+		3328FC51175351C300C38C1A /* KBPebbleImage.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = KBPebbleImage.h; sourceTree = "<group>"; };
+		3328FC52175351C300C38C1A /* KBPebbleImage.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = KBPebbleImage.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -83,12 +89,6 @@
 		3328FBF01750F95800C38C1A = {
 			isa = PBXGroup;
 			children = (
-				3328FC311750FADD00C38C1A /* MediaPlayer.framework */,
-				3328FC2F1750FA4100C38C1A /* MessageUI.framework */,
-				3328FC2D1750FA3B00C38C1A /* CoreMotion.framework */,
-				3328FC2B1750FA3500C38C1A /* CoreBluetooth.framework */,
-				3328FC291750FA2E00C38C1A /* libz.dylib */,
-				3328FC271750FA2300C38C1A /* ExternalAccessory.framework */,
 				3328FC021750F95800C38C1A /* pebbleremote */,
 				3328FBFB1750F95800C38C1A /* Frameworks */,
 				3328FBFA1750F95800C38C1A /* Products */,
@@ -106,6 +106,12 @@
 		3328FBFB1750F95800C38C1A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				3328FC291750FA2E00C38C1A /* libz.dylib */,
+				3328FC271750FA2300C38C1A /* ExternalAccessory.framework */,
+				3328FC311750FADD00C38C1A /* MediaPlayer.framework */,
+				3328FC2F1750FA4100C38C1A /* MessageUI.framework */,
+				3328FC2D1750FA3B00C38C1A /* CoreMotion.framework */,
+				3328FC2B1750FA3500C38C1A /* CoreBluetooth.framework */,
 				3328FC251750F9C200C38C1A /* PebbleVendor.framework */,
 				3328FC231750F9BB00C38C1A /* PebbleKit.framework */,
 				3328FBFC1750F95800C38C1A /* UIKit.framework */,
@@ -126,6 +132,10 @@
 				3328FC031750F95800C38C1A /* Supporting Files */,
 				3328FC331750FAFE00C38C1A /* KBiPodRemote.h */,
 				3328FC341750FAFE00C38C1A /* KBiPodRemote.m */,
+				3328FC4E17534A5D00C38C1A /* KBPebbleMessageQueue.h */,
+				3328FC4F17534A5D00C38C1A /* KBPebbleMessageQueue.m */,
+				3328FC51175351C300C38C1A /* KBPebbleImage.h */,
+				3328FC52175351C300C38C1A /* KBPebbleImage.m */,
 			);
 			path = pebbleremote;
 			sourceTree = "<group>";
@@ -215,6 +225,8 @@
 				3328FC0D1750F95800C38C1A /* KBAppDelegate.m in Sources */,
 				3328FC161750F95800C38C1A /* KBViewController.m in Sources */,
 				3328FC351750FAFE00C38C1A /* KBiPodRemote.m in Sources */,
+				3328FC5017534A5D00C38C1A /* KBPebbleMessageQueue.m in Sources */,
+				3328FC53175351C300C38C1A /* KBPebbleImage.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -349,6 +361,7 @@
 				3328FC1E1750F95800C38C1A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

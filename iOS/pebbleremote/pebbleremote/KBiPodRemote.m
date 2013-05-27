@@ -9,6 +9,8 @@
 #import "KBiPodRemote.h"
 #import <PebbleKit/PebbleKit.h>
 #import <MediaPlayer/MediaPlayer.h>
+#import "KBPebbleMessageQueue.h"
+#import "KBPebbleImage.h"
 
 #define IPOD_UUID { 0x24, 0xCA, 0x78, 0x2C, 0xB3, 0x1F, 0x49, 0x04, 0x83, 0xE9, 0xCA, 0x51, 0x9C, 0x60, 0x10, 0x97 }
 
@@ -19,14 +21,25 @@
 #define IPOD_NOW_PLAYING_KEY @(0xFEFA)
 #define IPOD_REQUEST_PARENT_KEY @(0xFEF9)
 #define IPOD_PLAY_TRACK_KEY @(0xFEF8)
+#define IPOD_NOW_PLAYING_RESPONSE_TYPE_KEY @(0xFEF7)
+#define IPOD_ALBUM_ART_KEY @(0xFEF6)
+#define IPOD_CHANGE_STATE_KEY @(0xFEF5)
 
 #define MAX_LABEL_LENGTH 20
 #define MAX_RESPONSE_COUNT 15
 #define MAX_OUTGOING_SIZE 105 // This allows some overhead.
 
+typedef enum {
+    NowPlayingTitle,
+    NowPlayingArtist,
+    NowPlayingAlbum,
+    NowPlayingTitleArtist
+} NowPlayingType;
+
 @interface KBiPodRemote () {
     PBWatch *our_watch;
     MPMusicPlayerController *music_player;
+    KBPebbleMessageQueue *message_queue;
 }
 
 - (void)setWatch:(PBWatch*)watch;
@@ -34,7 +47,7 @@
 - (void)watch:(PBWatch*)watch wantsLibraryData:(NSDictionary*)request;
 - (void)pushLibraryResults:(NSArray*)results withOffset:(NSInteger)offset toWatch:(PBWatch*)watch type:(MPMediaGrouping)type;
 - (void)musicItemChanged:(MPMediaItem*)item;
-- (void)pushNowPlayingItemToWatch:(PBWatch*)watch;
+- (void)pushNowPlayingItemToWatch:(PBWatch*)watch detailed:(BOOL)detailed;
 
 @end
 
@@ -44,6 +57,7 @@
 {
     self = [super init];
     if (self) {
+        message_queue = [[KBPebbleMessageQueue alloc] init];
         [[PBPebbleCentral defaultCentral] setDelegate:self];
         [self setWatch:[[PBPebbleCentral defaultCentral] lastConnectedWatch]];
         music_player = [MPMusicPlayerController iPodMusicPlayer];
@@ -54,24 +68,53 @@
 }
 
 - (void)musicItemChanged:(MPMediaItem *)item {
-    [self pushNowPlayingItemToWatch:our_watch];
+    [self pushNowPlayingItemToWatch:our_watch detailed:YES];
 }
 
-- (void)pushNowPlayingItemToWatch:(PBWatch *)watch {
+- (void)pushNowPlayingItemToWatch:(PBWatch *)watch detailed:(BOOL)detailed {
     MPMediaItem *item = [music_player nowPlayingItem];
     NSString *title = [item valueForProperty:MPMediaItemPropertyTitle];
     NSString *artist = [item valueForProperty:MPMediaItemPropertyArtist];
-    NSString *value;
-    if(!item) {
-        value = @"Nothing playing.";
+    NSString *album = [item valueForProperty:MPMediaItemPropertyAlbumTitle];
+    if(!title) title = @"";
+    if(!artist) artist = @"";
+    if(!album) album = @"";
+    if(!detailed) {
+        NSString *value;
+        if(!item) {
+            value = @"Nothing playing.";
+        } else {
+            value = [NSString stringWithFormat:@"%@ - %@", title, artist, nil];
+        }
+        if([value length] > MAX_OUTGOING_SIZE) {
+            value = [value substringToIndex:MAX_OUTGOING_SIZE];
+        }
+        [message_queue enqueue:@{IPOD_NOW_PLAYING_KEY: value, IPOD_NOW_PLAYING_RESPONSE_TYPE_KEY: @(NowPlayingTitleArtist)}];
+        NSLog(@"Now playing: %@", value);
     } else {
-        value = [NSString stringWithFormat:@"%@ - %@", title, artist, nil];
+        NSLog(@"Pushing everything.");
+        [message_queue enqueue:@{IPOD_NOW_PLAYING_KEY: title, IPOD_NOW_PLAYING_RESPONSE_TYPE_KEY: @(NowPlayingTitle)}];
+        [message_queue enqueue:@{IPOD_NOW_PLAYING_KEY: artist, IPOD_NOW_PLAYING_RESPONSE_TYPE_KEY:@(NowPlayingArtist)}];
+        [message_queue enqueue:@{IPOD_NOW_PLAYING_KEY: album, IPOD_NOW_PLAYING_RESPONSE_TYPE_KEY: @(NowPlayingAlbum)}];
+        
+        // Get and send the artwork.
+        MPMediaItemArtwork *artwork = [item valueForProperty:MPMediaItemPropertyArtwork];
+        if(artwork) {
+            UIImage* image = [artwork imageWithSize:CGSizeMake(64, 64)];
+            NSData *bitmap = [KBPebbleImage ditheredBitmapFromImage:image withHeight:64 width:64];
+            size_t length = [bitmap length];
+            uint8_t j = 0;
+            for(size_t i = 0; i < length; i += MAX_OUTGOING_SIZE-1) {
+                NSMutableData *outgoing = [[NSMutableData alloc] initWithCapacity:MAX_OUTGOING_SIZE];
+                [outgoing appendBytes:&j length:1];
+                [outgoing appendData:[bitmap subdataWithRange:NSMakeRange(i, MIN(MAX_OUTGOING_SIZE-1, length - i))]];
+                [message_queue enqueue:@{IPOD_ALBUM_ART_KEY: outgoing}];
+                ++j;
+            }
+        } else {
+            NSLog(@"No artwork.");
+        }
     }
-    if([value length] > MAX_OUTGOING_SIZE) {
-        value = [value substringToIndex:MAX_OUTGOING_SIZE];
-    }
-    [watch appMessagesPushUpdate:@{IPOD_NOW_PLAYING_KEY: value} onSent:nil];
-    NSLog(@"Now playing: %@", value);
 }
 
 - (void)pebbleCentral:(PBPebbleCentral *)central watchDidConnect:(PBWatch *)watch isNew:(BOOL)isNew {
@@ -80,9 +123,14 @@
 
 - (void)setWatch:(PBWatch *)watch {
     NSLog(@"Have a watch.");
+    if(![watch isConnected]) {
+        NSLog(@"Not connected.");
+        return;
+    }
     [watch appMessagesGetIsSupported:^(PBWatch *watch, BOOL isAppMessagesSupported) {
         NSLog(@"Useful watch %@ connected.", [watch name]);
         our_watch = watch;
+        message_queue.watch = watch;
         // Send a message to make sure it's awake and that we have a session.
         uint8_t uuid[] = IPOD_UUID;
         [watch appMessagesSetUUID:[NSData dataWithBytes:uuid length:16]];
@@ -105,7 +153,34 @@
             [self watch:watch wantsLibraryData:message];
         }
     } else if(message[IPOD_NOW_PLAYING_KEY]) {
-        [self pushNowPlayingItemToWatch:watch];
+        [self pushNowPlayingItemToWatch:watch detailed:[message[IPOD_NOW_PLAYING_KEY] boolValue]];
+    } else if(message[IPOD_CHANGE_STATE_KEY]) {
+        [self changeState:[message[IPOD_CHANGE_STATE_KEY] integerValue]];
+    }
+}
+
+- (void)changeState:(NSInteger)state {
+    switch(state) {
+        case 0:
+            if([music_player playbackState] == MPMusicPlaybackStatePlaying) [music_player pause];
+            else [music_player play];
+            break;
+        case 1:
+            [music_player skipToNextItem];
+            break;
+        case -1:
+            if([music_player currentPlaybackTime] < 3) {
+                [music_player skipToPreviousItem];
+            } else {
+                [music_player skipToBeginning];
+            }
+            break;
+        case 64:
+            [music_player setVolume:[music_player volume] + 0.1];
+            break;
+        case -64:
+            [music_player setVolume:[music_player volume] - 0.1];
+            break;
     }
 }
 
@@ -115,6 +190,7 @@
     [music_player setQueueWithItemCollection:queue];
     [music_player setNowPlayingItem:track];
     [music_player play];
+    [self pushNowPlayingItemToWatch:watch detailed:YES];
 }
 
 - (void)watch:(PBWatch *)watch wantsLibraryData:(NSDictionary *)request {
