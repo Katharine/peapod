@@ -9,11 +9,14 @@ typedef struct MarqueeTextLayer {
     GFont font;
     GColor text_colour;
     GColor background_colour;
-    int16_t countdown;
-    int16_t text_width;
     int16_t offset;
+    int16_t text_width;
 	struct MarqueeTextLayer* previous;
 	struct MarqueeTextLayer* next;
+    Animation animation;
+    AnimationHandlers animation_handlers;
+    AnimationImplementation animation_implementation;
+    bool ready;
 } MarqueeTextLayer;
 
 void marquee_text_layer_tick();

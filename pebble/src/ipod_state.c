@@ -24,6 +24,9 @@ void ipod_state_init() {
             .in_received = in_received,
         }
     };
+    memset(s_album, 0, 100);
+    memset(s_artist, 0, 100);
+    memset(s_title, 0, 100);
     app_message_register_callbacks(&app_callbacks);
 }
 

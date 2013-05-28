@@ -12,6 +12,19 @@ static MarqueeTextLayer* head;
 
 static void do_draw(Layer* layer, GContext* context);
 
+static void update_animation(struct Animation *animation, const uint32_t time_normalized);
+static void started_animation(struct Animation *animation, void *context) {}
+static void stopped_animation(struct Animation *animation, bool finished, void *context) {}
+
+static const AnimationImplementation animate_marquee = {
+    .update = update_animation,
+};
+
+static const AnimationHandlers handle_marquee = {
+    .started = started_animation,
+    .stopped = stopped_animation,
+};
+
 void marquee_text_layer_init(MarqueeTextLayer *marquee, GRect frame) {
     // And now we lie about our frame. See above.
     frame.origin.x -= BOUND_OFFSET;
@@ -25,8 +38,16 @@ void marquee_text_layer_init(MarqueeTextLayer *marquee, GRect frame) {
     marquee->text_colour = GColorBlack;
     marquee->offset = 0;
 	marquee->text_width = -1;
-    marquee->countdown = 100;
     marquee->font = fonts_get_system_font(FONT_KEY_FONT_FALLBACK);
+    animation_init(&marquee->animation);
+    animation_set_handlers(&marquee->animation, marquee->animation_handlers, marquee);
+    marquee->animation_implementation = (AnimationImplementation){
+        .update = update_animation,
+    };
+    animation_set_implementation(&marquee->animation, &marquee->animation_implementation);
+    animation_set_duration(&marquee->animation, ((uint32_t) ~0)); // ANIMATION_DURATION_INFINITE
+    animation_set_delay(&marquee->animation, 4000);
+    animation_schedule(&marquee->animation);
     marquee_text_layer_mark_dirty(marquee);
 	// Update the list
 	if(head)
@@ -47,11 +68,15 @@ void marquee_text_layer_deinit(MarqueeTextLayer *marquee) {
 	if(marquee->previous) {
 		marquee->previous->next = marquee->next;
 	}
+    animation_unschedule(&marquee->animation);
 }
 
 void marquee_text_layer_set_text(MarqueeTextLayer *marquee, const char *text) {
     marquee->text = text;
     marquee_text_layer_mark_dirty(marquee);
+    animation_unschedule(&marquee->animation);
+    animation_set_delay(&marquee->animation, 4000);
+    animation_schedule(&marquee->animation);
 }
 
 void marquee_text_layer_set_font(MarqueeTextLayer *marquee, GFont font) {
@@ -72,22 +97,7 @@ void marquee_text_layer_set_background_color(MarqueeTextLayer *marquee, GColor c
 void marquee_text_layer_mark_dirty(MarqueeTextLayer *marquee) {
     marquee->text_width = -1;
     marquee->offset = 0;
-    marquee->countdown = 100;
     layer_mark_dirty(&marquee->layer);
-}
-
-void marquee_text_layer_tick() {
-	MarqueeTextLayer *marquee = head;
-	while(marquee) {
-		if(marquee->countdown > 0) {
-			--marquee->countdown;
-			goto next;
-		}
-		marquee->offset += 1;
-		layer_mark_dirty(&marquee->layer);
-	next:
-		marquee = marquee->previous;
-	}
 }
 
 static void do_draw(Layer* layer, GContext* context) {
@@ -106,10 +116,6 @@ static void do_draw(Layer* layer, GContext* context) {
 		graphics_text_draw(context, marquee->text, marquee->font, rect, GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
 		return;
 	}
-    if(marquee->offset > marquee->text_width + 30) {
-        marquee->offset = 0;
-		marquee->countdown = 100;
-    }
     if(marquee->offset < marquee->text_width) {
         graphics_text_draw(context, marquee->text, marquee->font, GRect(-marquee->offset, 0, marquee->text_width, layer_get_frame(layer).size.h), GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);
     }
@@ -118,4 +124,17 @@ static void do_draw(Layer* layer, GContext* context) {
     }
     // And draw our hack, too:
     graphics_fill_rect(context, GRect(-BOUND_OFFSET, 0, BOUND_OFFSET, layer_get_frame(layer).size.h), 0, GCornerNone);
+}
+
+
+static void update_animation(struct Animation *animation, const uint32_t time_normalized) {
+    MarqueeTextLayer *marquee = (MarqueeTextLayer*)animation_get_context(animation);
+    ++marquee->offset;
+    if(marquee->offset > marquee->text_width + 30) {
+        marquee->offset = 0;
+        animation_unschedule(animation);
+        animation_set_delay(animation, 4000);
+        animation_schedule(animation);
+    }
+    layer_mark_dirty((Layer*)marquee);
 }
