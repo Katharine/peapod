@@ -99,7 +99,7 @@ static void do_draw(Layer* layer, GContext* context) {
     graphics_context_set_fill_color(context, marquee->background_colour);
     graphics_context_set_text_color(context, marquee->text_colour);
     graphics_fill_rect(context, layer_get_bounds(&marquee->layer), 0, GCornerNone);
-	if(marquee->text_width < layer_get_frame(&marquee->layer).size.w) {
+	if(marquee->text_width < layer_get_frame(&marquee->layer).size.w - BOUND_OFFSET) {
         GRect rect = GRectZero;
         rect.size = layer_get_bounds(&marquee->layer).size;
         rect.size.w -= BOUND_OFFSET;
