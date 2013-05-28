@@ -40,6 +40,8 @@ static void send_state_change(int8_t change);
 static void app_in_received(DictionaryIterator *received, void *context);
 static void state_callback();
 
+static void display_no_album();
+
 static bool controlling_volume = false;
 static bool is_shown = false;
 
@@ -100,10 +102,11 @@ static void window_load(Window* window) {
         .info_flags = 1,
         .row_size_bytes = 8,
     };
-    memset(album_art_data, 0, 512);
+    //memset(album_art_data, 0, 512);
     bitmap_layer_init(&album_art_layer, GRect(30, 35, 64, 64));
     bitmap_layer_set_bitmap(&album_art_layer, &album_art_bitmap);
     layer_add_child(window_get_root_layer(window), &album_art_layer.layer);
+    display_no_album();
     
     app_callbacks = (AppMessageCallbacksNode){
         .callbacks = {
@@ -189,9 +192,13 @@ static void request_now_playing() {
 static void app_in_received(DictionaryIterator *received, void* context) {
     Tuple* tuple = dict_find(received, IPOD_ALBUM_ART_KEY);
     if(tuple) {
-        size_t offset = tuple->value->data[0] * 104;
-        memcpy(album_art_data + offset, tuple->value->data + 1, tuple->length - 1);
-        layer_mark_dirty(&album_art_layer.layer);
+        if(tuple->value->data[0] == 255) {
+            display_no_album();
+        } else {
+            size_t offset = tuple->value->data[0] * 104;
+            memcpy(album_art_data + offset, tuple->value->data + 1, tuple->length - 1);
+            layer_mark_dirty(&album_art_layer.layer);
+        }
     }
 }
 
@@ -206,4 +213,9 @@ static void state_callback() {
     }
     progress_bar_layer_set_range(&progress_bar, 0, ipod_state_duration());
     progress_bar_layer_set_value(&progress_bar, ipod_state_current_time());
+}
+
+static void display_no_album() {
+    resource_load(resource_get_handle(RESOURCE_ID_ALBUM_ART_MISSING), album_art_data, 512);
+    layer_mark_dirty((Layer*)&album_art_layer);
 }

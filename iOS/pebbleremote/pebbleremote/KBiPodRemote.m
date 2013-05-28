@@ -123,18 +123,21 @@ typedef enum {
         MPMediaItemArtwork *artwork = [item valueForProperty:MPMediaItemPropertyArtwork];
         if(artwork) {
             UIImage* image = [artwork imageWithSize:CGSizeMake(64, 64)];
-            NSData *bitmap = [KBPebbleImage ditheredBitmapFromImage:image withHeight:64 width:64];
-            size_t length = [bitmap length];
-            uint8_t j = 0;
-            for(size_t i = 0; i < length; i += MAX_OUTGOING_SIZE-1) {
-                NSMutableData *outgoing = [[NSMutableData alloc] initWithCapacity:MAX_OUTGOING_SIZE];
-                [outgoing appendBytes:&j length:1];
-                [outgoing appendData:[bitmap subdataWithRange:NSMakeRange(i, MIN(MAX_OUTGOING_SIZE-1, length - i))]];
-                [message_queue enqueue:@{IPOD_ALBUM_ART_KEY: outgoing}];
-                ++j;
+            if(!image) {
+                [message_queue enqueue:@{IPOD_ALBUM_ART_KEY: [NSNumber numberWithUint8:255]}];
             }
-        } else {
-            NSLog(@"No artwork.");
+            else {
+                NSData *bitmap = [KBPebbleImage ditheredBitmapFromImage:image withHeight:64 width:64];
+                size_t length = [bitmap length];
+                uint8_t j = 0;
+                for(size_t i = 0; i < length; i += MAX_OUTGOING_SIZE-1) {
+                    NSMutableData *outgoing = [[NSMutableData alloc] initWithCapacity:MAX_OUTGOING_SIZE];
+                    [outgoing appendBytes:&j length:1];
+                    [outgoing appendData:[bitmap subdataWithRange:NSMakeRange(i, MIN(MAX_OUTGOING_SIZE-1, length - i))]];
+                    [message_queue enqueue:@{IPOD_ALBUM_ART_KEY: outgoing}];
+                    ++j;
+                }
+            }
         }
     }
 }

@@ -29,6 +29,11 @@
             "type": "png",
             "defName": "ICON_REWIND",
             "file": "images/rw.png"
+        },
+        {
+            "type": "raw",
+            "defName": "ALBUM_ART_MISSING",
+            "file": "data/album.gbmp"
         }
     ],
     "friendlyVersion": "VERSION",
