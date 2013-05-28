@@ -24,6 +24,7 @@
 #define IPOD_NOW_PLAYING_RESPONSE_TYPE_KEY @(0xFEF7)
 #define IPOD_ALBUM_ART_KEY @(0xFEF6)
 #define IPOD_CHANGE_STATE_KEY @(0xFEF5)
+#define IPOD_CURRENT_STATE_KEY @(0xFEF4)
 
 #define MAX_LABEL_LENGTH 20
 #define MAX_RESPONSE_COUNT 15
@@ -33,7 +34,8 @@ typedef enum {
     NowPlayingTitle,
     NowPlayingArtist,
     NowPlayingAlbum,
-    NowPlayingTitleArtist
+    NowPlayingTitleArtist,
+    NowPlayingNumbers,
 } NowPlayingType;
 
 @interface KBiPodRemote () {
@@ -61,7 +63,8 @@ typedef enum {
         [[PBPebbleCentral defaultCentral] setDelegate:self];
         [self setWatch:[[PBPebbleCentral defaultCentral] lastConnectedWatch]];
         music_player = [MPMusicPlayerController iPodMusicPlayer];
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(musicItemChanged:) name:MPMusicPlayerControllerNowPlayingItemDidChangeNotification object:music_player];
+        //[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(musicItemChanged:) name:MPMusicPlayerControllerNowPlayingItemDidChangeNotification object:music_player];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(musicStateChanged:) name:MPMusicPlayerControllerPlaybackStateDidChangeNotification object:music_player];
         [music_player beginGeneratingPlaybackNotifications];
     }
     return self;
@@ -69,6 +72,24 @@ typedef enum {
 
 - (void)musicItemChanged:(MPMediaItem *)item {
     [self pushNowPlayingItemToWatch:our_watch detailed:YES];
+}
+
+- (void)musicStateChanged:(MPMusicPlaybackState)state {
+    [self pushCurrentStateToWatch:our_watch];
+}
+
+- (void)pushCurrentStateToWatch:(PBWatch *)watch {
+    uint16_t current_time = (uint16_t)[music_player currentPlaybackTime];
+    uint16_t total_time = (uint16_t)[[[music_player nowPlayingItem] valueForProperty:MPMediaItemPropertyPlaybackDuration] doubleValue];
+    uint8_t metadata[] = {
+        [music_player playbackState],
+        [music_player shuffleMode],
+        [music_player repeatMode],
+        total_time >> 8, total_time & 0xFF,
+        current_time >> 8, current_time & 0xFF
+    };
+    NSLog(@"Current state: %@", [NSData dataWithBytes:metadata length:7]);
+    [message_queue enqueue:@{IPOD_CURRENT_STATE_KEY: [NSData dataWithBytes:metadata length:7]}];
 }
 
 - (void)pushNowPlayingItemToWatch:(PBWatch *)watch detailed:(BOOL)detailed {
@@ -93,6 +114,7 @@ typedef enum {
         NSLog(@"Now playing: %@", value);
     } else {
         NSLog(@"Pushing everything.");
+        [self pushCurrentStateToWatch:watch];
         [message_queue enqueue:@{IPOD_NOW_PLAYING_KEY: title, IPOD_NOW_PLAYING_RESPONSE_TYPE_KEY: @(NowPlayingTitle)}];
         [message_queue enqueue:@{IPOD_NOW_PLAYING_KEY: artist, IPOD_NOW_PLAYING_RESPONSE_TYPE_KEY:@(NowPlayingArtist)}];
         [message_queue enqueue:@{IPOD_NOW_PLAYING_KEY: album, IPOD_NOW_PLAYING_RESPONSE_TYPE_KEY: @(NowPlayingAlbum)}];
@@ -164,22 +186,26 @@ typedef enum {
         case 0:
             if([music_player playbackState] == MPMusicPlaybackStatePlaying) [music_player pause];
             else [music_player play];
+            //[self performSelector:@selector(pushCurrentStateToWatch:) withObject:our_watch afterDelay:0.1];
             break;
         case 1:
             [music_player skipToNextItem];
+            [self pushNowPlayingItemToWatch:our_watch detailed:YES];
             break;
         case -1:
             if([music_player currentPlaybackTime] < 3) {
                 [music_player skipToPreviousItem];
+                [self pushNowPlayingItemToWatch:our_watch detailed:YES];
             } else {
                 [music_player skipToBeginning];
+                //[self performSelector:@selector(pushCurrentStateToWatch:) withObject:our_watch afterDelay:0.1];
             }
             break;
         case 64:
-            [music_player setVolume:[music_player volume] + 0.1];
+            [music_player setVolume:[music_player volume] + 0.0625];
             break;
         case -64:
-            [music_player setVolume:[music_player volume] - 0.1];
+            [music_player setVolume:[music_player volume] - 0.0625];
             break;
     }
 }

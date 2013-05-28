@@ -3,6 +3,8 @@
 #include "pebble_fonts.h"
 #include "pebble_app.h"
 #include "marquee_text.h"
+#include "ipod_state.h"
+#include "progress_bar.h"
 #include "common.h"
 
 static Window window;
@@ -13,6 +15,7 @@ static MarqueeTextLayer artist_layer;
 static BitmapLayer album_art_layer;
 static GBitmap album_art_bitmap;
 static uint8_t album_art_data[512];
+static ProgressBarLayer progress_bar;
 
 // Action bar icons
 static HeapBitmap icon_pause;
@@ -35,12 +38,10 @@ static void request_now_playing();
 static void send_state_change(int8_t change);
 
 static void app_in_received(DictionaryIterator *received, void *context);
-
-static char s_title[100];
-static char s_album[100];
-static char s_artist[100];
+static void state_callback();
 
 static bool controlling_volume = false;
+static bool is_shown = false;
 
 void show_now_playing() {
     window_init(&window, "Now playing");
@@ -49,6 +50,10 @@ void show_now_playing() {
         .load = window_load,
     });
     window_stack_push(&window, true);
+}
+
+void now_playing_tick() {
+    progress_bar_layer_set_value(&progress_bar, ipod_state_current_time());
 }
 
 static void window_load(Window* window) {
@@ -63,25 +68,30 @@ static void window_load(Window* window) {
     action_bar_layer_init(&action_bar);
     action_bar_layer_add_to_window(&action_bar, window);
     action_bar_layer_set_click_config_provider(&action_bar, click_config_provider);
+    controlling_volume = false;
     // Set default icon set.
     action_bar_layer_set_icon(&action_bar, BUTTON_ID_UP, &icon_fast_forward.bmp);
     action_bar_layer_set_icon(&action_bar, BUTTON_ID_DOWN, &icon_rewind.bmp);
     action_bar_layer_set_icon(&action_bar, BUTTON_ID_SELECT, &icon_play.bmp);
     
     // Text labels
-    marquee_text_layer_init(&title_layer, GRect(2, 2, 118, 30));
+    marquee_text_layer_init(&title_layer, GRect(2, 0, 118, 35));
     marquee_text_layer_set_font(&title_layer, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD));
     marquee_text_layer_set_text(&title_layer, "Loading...");
-    marquee_text_layer_init(&album_layer, GRect(2, 130, 118, 20));
+    marquee_text_layer_init(&album_layer, GRect(2, 130, 118, 23));
     marquee_text_layer_set_font(&album_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
     marquee_text_layer_set_text(&album_layer, "");
-    marquee_text_layer_init(&artist_layer, GRect(2, 107, 118, 25));
+    marquee_text_layer_init(&artist_layer, GRect(2, 107, 118, 28));
     marquee_text_layer_set_font(&artist_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24));
     marquee_text_layer_set_text(&artist_layer, "");
     
     layer_add_child(window_get_root_layer(window), &title_layer.layer);
     layer_add_child(window_get_root_layer(window), &album_layer.layer);
     layer_add_child(window_get_root_layer(window), &artist_layer.layer);
+    
+    // Progress bar
+    progress_bar_layer_init(&progress_bar, GRect(10, 105, 104, 7));
+    layer_add_child(window_get_root_layer(window), (Layer*)&progress_bar);
     
     // Album art
     album_art_bitmap = (GBitmap) {
@@ -91,7 +101,7 @@ static void window_load(Window* window) {
         .row_size_bytes = 8,
     };
     memset(album_art_data, 0, 512);
-    bitmap_layer_init(&album_art_layer, GRect(30, 40, 64, 64));
+    bitmap_layer_init(&album_art_layer, GRect(30, 35, 64, 64));
     bitmap_layer_set_bitmap(&album_art_layer, &album_art_bitmap);
     layer_add_child(window_get_root_layer(window), &album_art_layer.layer);
     
@@ -101,7 +111,9 @@ static void window_load(Window* window) {
         }
     };
     app_message_register_callbacks(&app_callbacks);
+    ipod_state_set_callback(state_callback);
     request_now_playing();
+    is_shown = true;
 }
 
 static void window_unload(Window* window) {
@@ -118,6 +130,7 @@ static void window_unload(Window* window) {
     heap_bitmap_deinit(&icon_rewind);
     heap_bitmap_deinit(&icon_volume_up);
     heap_bitmap_deinit(&icon_volume_down);
+    is_shown = false;
 }
 
 static void click_config_provider(ClickConfig **config, void* context) {
@@ -174,40 +187,23 @@ static void request_now_playing() {
 }
 
 static void app_in_received(DictionaryIterator *received, void* context) {
-    Tuple* tuple = dict_find(received, IPOD_NOW_PLAYING_RESPONSE_TYPE_KEY);
-    if(tuple) {
-        NowPlayingType type = tuple->value->uint8;
-        tuple = dict_find(received, IPOD_NOW_PLAYING_KEY);
-        if(!tuple) return;
-        char* target = NULL;
-        MarqueeTextLayer *layer = NULL;
-        switch(type) {
-            case NowPlayingAlbum:
-                target = s_album;
-                layer = &album_layer;
-                break;
-            case NowPlayingArtist:
-                target = s_artist;
-                layer = &artist_layer;
-                break;
-            case NowPlayingTitle:
-                target = s_title;
-                layer = &title_layer;
-                break;
-            default:
-                return;
-        }
-        uint8_t len = strlen(tuple->value->cstring);
-        if(len > 99) len = 99;
-        memcpy(target, tuple->value->cstring, len);
-        target[len] = '\0';
-        marquee_text_layer_set_text(layer, target);
-        return;
-    }
-    tuple = dict_find(received, IPOD_ALBUM_ART_KEY);
+    Tuple* tuple = dict_find(received, IPOD_ALBUM_ART_KEY);
     if(tuple) {
         size_t offset = tuple->value->data[0] * 104;
         memcpy(album_art_data + offset, tuple->value->data + 1, tuple->length - 1);
         layer_mark_dirty(&album_art_layer.layer);
     }
+}
+
+static void state_callback() {
+    marquee_text_layer_set_text(&album_layer, ipod_get_album());
+    marquee_text_layer_set_text(&artist_layer, ipod_get_artist());
+    marquee_text_layer_set_text(&title_layer, ipod_get_title());
+    if(ipod_get_playback_state() == MPMusicPlaybackStatePlaying) {
+        action_bar_layer_set_icon(&action_bar, BUTTON_ID_SELECT, &icon_pause.bmp);
+    } else {
+        action_bar_layer_set_icon(&action_bar, BUTTON_ID_SELECT, &icon_play.bmp);
+    }
+    progress_bar_layer_set_range(&progress_bar, 0, ipod_state_duration());
+    progress_bar_layer_set_value(&progress_bar, ipod_state_current_time());
 }

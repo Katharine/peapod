@@ -1,11 +1,13 @@
 #include "pebble_os.h"
+#include "pebble_fonts.h"
 #include "library_menus.h"
 #include "common.h"
 #include "now_playing.h"
 
-#define MENU_CACHE_COUNT 15
+#define MENU_CACHE_COUNT 25
 #define MENU_ENTRY_LENGTH 21
 #define MENU_STACK_DEPTH 4 // Deepest: genres -> artists -> albums -> songs
+#define MAX_MENU_ENTRIES 1170
 
 typedef struct {
     MenuLayer layer;
@@ -22,6 +24,7 @@ static LibraryMenu menu_stack[MENU_STACK_DEPTH];
 static int8_t menu_stack_pointer;
 
 static AppMessageCallbacksNode app_callbacks;
+static GFont menu_font;
 
 static bool send_library_request(MPMediaGrouping grouping, uint32_t offset);
 static bool play_track(uint16_t index);
@@ -31,6 +34,7 @@ static uint16_t get_num_rows(MenuLayer* layer, uint16_t section_index, void* con
 static void draw_row(GContext *ctx, const Layer *cell_layer, MenuIndex *cell_index, void *callback_context);
 static void selection_changed(struct MenuLayer *menu_layer, MenuIndex new_index, MenuIndex old_index, void *callback_context);
 static void select_click(struct MenuLayer *menu_layer, MenuIndex *cell_index, void *callback_context);
+static int16_t get_cell_height(struct MenuLayer *menu_layer, MenuIndex *cell_index, void *callback_context);
 
 static void window_disappeared(Window* window);
 
@@ -42,6 +46,7 @@ void init_library_menus() {
     };
     app_message_register_callbacks(&app_callbacks);
     menu_stack_pointer = -1;
+    menu_font = fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD);
 }
 
 static bool build_parent_history(DictionaryIterator *iter) {
@@ -107,6 +112,7 @@ void display_library_view(MPMediaGrouping grouping) {
         .draw_row = draw_row,
         .selection_changed = selection_changed,
         .select_click = select_click,
+        .get_cell_height = get_cell_height,
     });
     layer_add_child(window_get_root_layer(&menu->window), menu_layer_get_layer(&menu->layer));
     
@@ -152,7 +158,7 @@ static void received_message(DictionaryIterator *received, void* context) {
                 }
                 if(i == MENU_CACHE_COUNT - 1) {
                     // Shift back if we're out of space, unless we're too far ahead already.
-                    if(menu->current_selection - menu->current_entry_offset <= 5) break;
+                    if(menu->current_selection - menu->current_entry_offset <= 10) break;
                     memmove(&menu->menu_entries[0], &menu->menu_entries[5], (MENU_CACHE_COUNT - 5) * MENU_ENTRY_LENGTH);
                     menu->last_entry -= 5;
                     menu->current_entry_offset += 5;
@@ -173,14 +179,25 @@ static void window_disappeared(Window* window) {
 
 // Menu callbacks
 static uint16_t get_num_rows(MenuLayer* layer, uint16_t section_index, void* context) {
-    return ((LibraryMenu*)context)->total_entry_count;
+    uint16_t total_count = ((LibraryMenu*)context)->total_entry_count;
+    return total_count < MAX_MENU_ENTRIES ? total_count : MAX_MENU_ENTRIES;
+}
+
+static int16_t get_cell_height(struct MenuLayer *menu_layer, MenuIndex *cell_index, void *callback_context) {
+    return 27;
 }
 
 static void draw_row(GContext *ctx, const Layer *cell_layer, MenuIndex *cell_index, void *callback_context) {
     LibraryMenu *menu = (LibraryMenu*)callback_context;
     int16_t pos = cell_index->row - menu->current_entry_offset;
     if(pos >= MENU_CACHE_COUNT || pos < 0) return;
-    menu_cell_basic_draw(ctx, cell_layer, menu->menu_entries[pos], NULL, NULL);
+    //menu_cell_basic_draw(ctx, cell_layer, menu->menu_entries[pos], NULL, NULL);
+    graphics_context_set_text_color(ctx, GColorBlack);
+    GRect bounds = cell_layer->bounds;
+    bounds.origin.x += 5;
+    bounds.origin.y -= 4;
+    bounds.size.w -= 5;
+    graphics_text_draw(ctx, menu->menu_entries[pos], menu_font, bounds, GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);
 }
 
 static void selection_changed(struct MenuLayer *menu_layer, MenuIndex new_index, MenuIndex old_index, void *callback_context) {

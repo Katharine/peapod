@@ -9,7 +9,9 @@
 #import "KBPebbleMessageQueue.h"
 #import <PebbleKit/PebbleKit.h>
 
-@interface KBPebbleMessageQueue ()
+@interface KBPebbleMessageQueue () {
+    NSInteger failureCount;
+}
 - (void)sendRequest;
 @end
 
@@ -52,11 +54,16 @@
         [_watch appMessagesPushUpdate:message onSent:^(PBWatch *watch, NSDictionary *update, NSError *error) {
             if(!error) {
                 [queue removeObjectAtIndex:0];
+                failureCount = 0;
                 //NSLog(@"Successfully pushed: %@", message);
             } else {
                 NSLog(@"Send failed; will retransmit.");
                 NSLog(@"Error: %@", error);
                 sleep(1);
+                if(++failureCount > 5) {
+                    [queue removeAllObjects];
+                    NSLog(@"Aborting.");
+                }
             }
             has_active_request = NO;
             //NSLog(@"Next message.");

@@ -11,6 +11,7 @@
 #define IPOD_NOW_PLAYING_RESPONSE_TYPE_KEY 0xFEF7
 #define IPOD_ALBUM_ART_KEY 0xFEF6
 #define IPOD_STATE_CHANGE_KEY 0xFEF5
+#define IPOD_CURRENT_STATE_KEY 0xFEF4
 
 typedef enum {
     MPMediaGroupingTitle,
@@ -24,10 +25,34 @@ typedef enum {
 } MPMediaGrouping;
 
 typedef enum {
+    MPMusicPlaybackStateStopped,
+    MPMusicPlaybackStatePlaying,
+    MPMusicPlaybackStatePaused,
+    MPMusicPlaybackStateInterrupted,
+    MPMusicPlaybackStateSeekingForward,
+    MPMusicPlaybackStateSeekingBackward
+} MPMusicPlaybackState;
+
+typedef enum {
+    MPMusicRepeatModeDefault, // the user's preference for repeat mode
+    MPMusicRepeatModeNone,
+    MPMusicRepeatModeOne,
+    MPMusicRepeatModeAll
+} MPMusicRepeatMode;
+
+typedef enum {
+    MPMusicShuffleModeDefault, // the user's preference for shuffle mode
+    MPMusicShuffleModeOff,
+    MPMusicShuffleModeSongs,
+    MPMusicShuffleModeAlbums
+} MPMusicShuffleMode;
+
+typedef enum {
     NowPlayingTitle,
     NowPlayingArtist,
     NowPlayingAlbum,
-    NowPlayingTitleArtist
+    NowPlayingTitleArtist,
+    NowPlayingNumbers,
 } NowPlayingType;
 
 #endif
