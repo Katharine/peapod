@@ -190,6 +190,7 @@ static void request_now_playing() {
 }
 
 static void app_in_received(DictionaryIterator *received, void* context) {
+    if(!is_shown) return;
     Tuple* tuple = dict_find(received, IPOD_ALBUM_ART_KEY);
     if(tuple) {
         if(tuple->value->data[0] == 255) {
@@ -203,6 +204,7 @@ static void app_in_received(DictionaryIterator *received, void* context) {
 }
 
 static void state_callback() {
+    if(!is_shown) return;
     marquee_text_layer_set_text(&album_layer, ipod_get_album());
     marquee_text_layer_set_text(&artist_layer, ipod_get_artist());
     marquee_text_layer_set_text(&title_layer, ipod_get_title());

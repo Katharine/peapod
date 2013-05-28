@@ -47,6 +47,7 @@ void marquee_text_layer_init(MarqueeTextLayer *marquee, GRect frame) {
     animation_set_implementation(&marquee->animation, &marquee->animation_implementation);
     animation_set_duration(&marquee->animation, ((uint32_t) ~0)); // ANIMATION_DURATION_INFINITE
     animation_set_delay(&marquee->animation, 4000);
+    animation_unschedule(&marquee->animation);
     animation_schedule(&marquee->animation);
     marquee_text_layer_mark_dirty(marquee);
 	// Update the list
