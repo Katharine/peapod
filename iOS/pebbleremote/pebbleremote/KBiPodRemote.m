@@ -201,7 +201,7 @@ typedef enum {
                 [self pushNowPlayingItemToWatch:our_watch detailed:YES];
             } else {
                 [music_player skipToBeginning];
-                //[self performSelector:@selector(pushCurrentStateToWatch:) withObject:our_watch afterDelay:0.1];
+                [self performSelector:@selector(pushCurrentStateToWatch:) withObject:our_watch afterDelay:0.1];
             }
             break;
         case 64:
