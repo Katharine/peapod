@@ -4,7 +4,7 @@
 #include "pebble_os.h"
 #include "common.h"
 
-typedef void(*iPodStateCallback)();
+typedef void(*iPodStateCallback)(bool track_data);
 
 void ipod_state_init();
 void ipod_state_tick();

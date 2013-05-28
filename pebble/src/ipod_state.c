@@ -3,7 +3,7 @@
 #include "common.h"
 
 static void in_received(DictionaryIterator *received, void *context);
-static void call_callback();
+static void call_callback(bool track_data);
 
 static AppMessageCallbacksNode app_callbacks;
 static iPodStateCallback state_callback;
@@ -84,9 +84,9 @@ char* ipod_get_title() {
 void ipod_set_shuffle_mode(MPMusicShuffleMode shuffle) {}
 void ipod_set_repeat_mode(MPMusicRepeatMode repeat) {}
 
-static void call_callback() {
+static void call_callback(bool track_data) {
     if(!state_callback) return;
-    state_callback();
+    state_callback(track_data);
 }
 
 static void in_received(DictionaryIterator *received, void *context) {
@@ -97,7 +97,7 @@ static void in_received(DictionaryIterator *received, void *context) {
         s_repeat_mode = tuple->value->data[2];
         s_duration = (tuple->value->data[3] << 8) | tuple->value->data[4];
         s_current_time = (tuple->value->data[5] << 8) | tuple->value->data[6];
-        call_callback();
+        call_callback(false);
         return;
     }
     tuple = dict_find(received, IPOD_NOW_PLAYING_RESPONSE_TYPE_KEY);
@@ -119,11 +119,12 @@ static void in_received(DictionaryIterator *received, void *context) {
             default:
                 return;
         }
+        if(strcmp(target, tuple->value->cstring) == 0) return;
         uint8_t len = strlen(tuple->value->cstring);
         if(len > 99) len = 99;
         memcpy(target, tuple->value->cstring, len);
         target[len] = '\0';
-        call_callback();
+        call_callback(true);
         return;
     }
 }

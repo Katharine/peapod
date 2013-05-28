@@ -38,7 +38,7 @@ static void request_now_playing();
 static void send_state_change(int8_t change);
 
 static void app_in_received(DictionaryIterator *received, void *context);
-static void state_callback();
+static void state_callback(bool track_data);
 
 static void display_no_album();
 
@@ -203,18 +203,21 @@ static void app_in_received(DictionaryIterator *received, void* context) {
     }
 }
 
-static void state_callback() {
+static void state_callback(bool track_data) {
     if(!is_shown) return;
-    marquee_text_layer_set_text(&album_layer, ipod_get_album());
-    marquee_text_layer_set_text(&artist_layer, ipod_get_artist());
-    marquee_text_layer_set_text(&title_layer, ipod_get_title());
-    if(ipod_get_playback_state() == MPMusicPlaybackStatePlaying) {
-        action_bar_layer_set_icon(&action_bar, BUTTON_ID_SELECT, &icon_pause.bmp);
+    if(track_data) {
+        marquee_text_layer_set_text(&album_layer, ipod_get_album());
+        marquee_text_layer_set_text(&artist_layer, ipod_get_artist());
+        marquee_text_layer_set_text(&title_layer, ipod_get_title());
     } else {
-        action_bar_layer_set_icon(&action_bar, BUTTON_ID_SELECT, &icon_play.bmp);
+        if(ipod_get_playback_state() == MPMusicPlaybackStatePlaying) {
+            action_bar_layer_set_icon(&action_bar, BUTTON_ID_SELECT, &icon_pause.bmp);
+        } else {
+            action_bar_layer_set_icon(&action_bar, BUTTON_ID_SELECT, &icon_play.bmp);
+        }
+        progress_bar_layer_set_range(&progress_bar, 0, ipod_state_duration());
+        progress_bar_layer_set_value(&progress_bar, ipod_state_current_time());
     }
-    progress_bar_layer_set_range(&progress_bar, 0, ipod_state_duration());
-    progress_bar_layer_set_value(&progress_bar, ipod_state_current_time());
 }
 
 static void display_no_album() {
