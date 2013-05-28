@@ -173,7 +173,7 @@ static void long_clicked_select(ClickRecognizerRef recognizer, void *context) {
 
 static void send_state_change(int8_t state_change) {
     DictionaryIterator *iter;
-    app_message_out_get(&iter);
+    ipod_message_out_get(&iter);
     if(!iter) return;
     dict_write_int8(iter, IPOD_STATE_CHANGE_KEY, state_change);
     app_message_out_send();
@@ -182,7 +182,7 @@ static void send_state_change(int8_t state_change) {
 
 static void request_now_playing() {
     DictionaryIterator *iter;
-    app_message_out_get(&iter);
+    ipod_message_out_get(&iter);
     if(!iter) return;
     dict_write_int8(iter, IPOD_NOW_PLAYING_KEY, 2);
     app_message_out_send();

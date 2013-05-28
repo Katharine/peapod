@@ -68,7 +68,7 @@ static bool build_parent_history(DictionaryIterator *iter) {
 
 static bool send_library_request(MPMediaGrouping grouping, uint32_t offset) {
     DictionaryIterator *iter;
-    if(app_message_out_get(&iter) != APP_MSG_OK) goto failed;
+    if(ipod_message_out_get(&iter) != APP_MSG_OK) goto failed;
     dict_write_uint8(iter, IPOD_REQUEST_LIBRARY_KEY, grouping);
     dict_write_uint32(iter, IPOD_REQUEST_OFFSET_KEY, offset);
     build_parent_history(iter);
@@ -83,7 +83,7 @@ failed:
 static bool play_track(uint16_t index) {
     DictionaryIterator *iter;
     LibraryMenu* menu = &menu_stack[menu_stack_pointer];
-    if(app_message_out_get(&iter) != APP_MSG_OK) goto failed;
+    if(ipod_message_out_get(&iter) != APP_MSG_OK) goto failed;
     dict_write_uint8(iter, IPOD_REQUEST_LIBRARY_KEY, menu->grouping);
     dict_write_uint16(iter, IPOD_PLAY_TRACK_KEY, menu->current_selection);
     build_parent_history(iter);

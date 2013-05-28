@@ -36,7 +36,7 @@ void ipod_state_tick() {
             ++s_current_time;
         } else {
             DictionaryIterator *iter;
-            app_message_out_get(&iter);
+            ipod_message_out_get(&iter);
             if(!iter) return;
             dict_write_int8(iter, IPOD_NOW_PLAYING_KEY, 2);
             app_message_out_send();

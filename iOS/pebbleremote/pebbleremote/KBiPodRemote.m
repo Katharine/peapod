@@ -25,6 +25,7 @@
 #define IPOD_ALBUM_ART_KEY @(0xFEF6)
 #define IPOD_CHANGE_STATE_KEY @(0xFEF5)
 #define IPOD_CURRENT_STATE_KEY @(0xFEF4)
+#define IPOD_SEQUENCE_NUMBER_KEY @(0xFEF3)
 
 #define MAX_LABEL_LENGTH 20
 #define MAX_RESPONSE_COUNT 15
@@ -42,6 +43,7 @@ typedef enum {
     PBWatch *our_watch;
     MPMusicPlayerController *music_player;
     KBPebbleMessageQueue *message_queue;
+    uint32_t last_sequence_number;
 }
 
 - (void)setWatch:(PBWatch*)watch;
@@ -154,6 +156,7 @@ typedef enum {
     }
     [watch appMessagesGetIsSupported:^(PBWatch *watch, BOOL isAppMessagesSupported) {
         NSLog(@"Useful watch %@ connected.", [watch name]);
+        last_sequence_number = 0;
         our_watch = watch;
         message_queue.watch = watch;
         // Send a message to make sure it's awake and that we have a session.
@@ -169,6 +172,17 @@ typedef enum {
 
 - (void)watch:(PBWatch *)watch receivedMessage:(NSDictionary *)message {
     NSLog(@"Received message: %@", message);
+    uint32_t sequence_number = [message[IPOD_SEQUENCE_NUMBER_KEY] uint32Value];
+    if(sequence_number == 0xFFFFFFFF) {
+        NSLog(@"Reset sequence numbers.");
+        last_sequence_number = 0;
+    } else {
+        if(sequence_number <= last_sequence_number) {
+            NSLog(@"Discarding duplicate message.");
+            return;
+        }
+        last_sequence_number = sequence_number;
+    }
     if(message[IPOD_PLAY_TRACK_KEY]) {
         [self watch:watch playTrackFromMessage:message];
     } else if(message[IPOD_REQUEST_LIBRARY_KEY]) {

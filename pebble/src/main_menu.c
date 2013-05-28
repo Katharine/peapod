@@ -71,7 +71,7 @@ void main_menu_init(Window* window) {
     app_message_register_callbacks(&app_callbacks);
     // Figure out what *is* playing.
     DictionaryIterator *iter;
-    app_message_out_get(&iter);
+    ipod_message_out_get(&iter);
     dict_write_uint8(iter, IPOD_NOW_PLAYING_KEY, 0);
     app_message_out_send();
     app_message_out_release();
