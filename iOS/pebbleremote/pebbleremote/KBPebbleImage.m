@@ -9,7 +9,7 @@
 #import "KBPebbleImage.h"
 
 static inline uint8_t pixelShade(uint8_t* i) {
-    return (i[0] + i[1] + i[2]) / 3;
+    return (i[0] * 0.21) + (i[1] * 0.72) + (i[2] * 0.07);
 }
 
 static inline size_t offset(size_t width, size_t x, size_t y) {
