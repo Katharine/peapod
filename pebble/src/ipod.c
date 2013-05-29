@@ -24,6 +24,12 @@ void handle_init(AppContextRef ctx) {
     init_library_menus();
     ipod_state_init();
     resource_init_current_app(&APP_RESOURCES);
+    app_timer_send_event(ctx, 33, 0);
+}
+
+void handle_timer(AppContextRef app_ctx, AppTimerHandle handle, uint32_t cookie) {
+    marquee_text_layer_tick();
+    app_timer_send_event(app_ctx, 33, 0);
 }
 
 void tick_handler(AppContextRef app_ctx, PebbleTickEvent *event) {
@@ -34,6 +40,7 @@ void tick_handler(AppContextRef app_ctx, PebbleTickEvent *event) {
 void pbl_main(void *params) {
     PebbleAppHandlers handlers = {
         .init_handler = &handle_init,
+        .timer_handler = &handle_timer,
         .tick_info = (PebbleAppTickInfo){
             .tick_units = SECOND_UNIT,
             .tick_handler = tick_handler,
