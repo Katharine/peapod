@@ -25,6 +25,9 @@ void ipod_state_init() {
         }
     };
     app_message_register_callbacks(&app_callbacks);
+    s_artist[0] = '\0';
+    s_album[0] = '\0';
+    s_title[0] = '\0';
 }
 
 void ipod_state_tick() {

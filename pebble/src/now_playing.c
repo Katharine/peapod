@@ -79,13 +79,13 @@ static void window_load(Window* window) {
     // Text labels
     marquee_text_layer_init(&title_layer, GRect(2, 0, 118, 35));
     marquee_text_layer_set_font(&title_layer, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD));
-    marquee_text_layer_set_text(&title_layer, "Loading...");
+    marquee_text_layer_set_text(&title_layer, ipod_get_title());
     marquee_text_layer_init(&album_layer, GRect(2, 130, 118, 23));
     marquee_text_layer_set_font(&album_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
-    marquee_text_layer_set_text(&album_layer, "");
+    marquee_text_layer_set_text(&album_layer, ipod_get_album());
     marquee_text_layer_init(&artist_layer, GRect(2, 107, 118, 28));
     marquee_text_layer_set_font(&artist_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24));
-    marquee_text_layer_set_text(&artist_layer, "");
+    marquee_text_layer_set_text(&artist_layer, ipod_get_artist());
     
     layer_add_child(window_get_root_layer(window), &title_layer.layer);
     layer_add_child(window_get_root_layer(window), &album_layer.layer);
@@ -133,6 +133,8 @@ static void window_unload(Window* window) {
     heap_bitmap_deinit(&icon_rewind);
     heap_bitmap_deinit(&icon_volume_up);
     heap_bitmap_deinit(&icon_volume_down);
+    
+    ipod_state_set_callback(NULL);
     is_shown = false;
 }
 
