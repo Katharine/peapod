@@ -31,6 +31,11 @@
             "file": "images/rw.png"
         },
         {
+            "type": "png",
+            "defName": "APP_ICON",
+            "file": "images/icon.png"
+        },
+        {
             "type": "raw",
             "defName": "ALBUM_ART_MISSING",
             "file": "data/album.gbmp"

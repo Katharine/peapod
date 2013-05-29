@@ -10,9 +10,9 @@
 
 #define MY_UUID { 0x24, 0xCA, 0x78, 0x2C, 0xB3, 0x1F, 0x49, 0x04, 0x83, 0xE9, 0xCA, 0x51, 0x9C, 0x60, 0x10, 0x97 }
 PBL_APP_INFO(MY_UUID,
-             "iPod Control", "KB",
+             "Peapod", "Katharine Berry",
              1, 0, /* App version */
-             DEFAULT_MENU_ICON,
+             RESOURCE_ID_APP_ICON,
              APP_INFO_STANDARD_APP);
 
 Window window;
