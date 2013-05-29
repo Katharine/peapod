@@ -18,18 +18,18 @@ PBL_APP_INFO(MY_UUID,
 Window window;
 
 void handle_init(AppContextRef ctx) {
+    g_app_context = ctx;
     window_init(&window, "iPod");
     window_stack_push(&window, true /* Animated */);
     main_menu_init(&window);
     init_library_menus();
     ipod_state_init();
     resource_init_current_app(&APP_RESOURCES);
-    app_timer_send_event(ctx, 33, 0);
 }
 
 void handle_timer(AppContextRef app_ctx, AppTimerHandle handle, uint32_t cookie) {
     marquee_text_layer_tick();
-    app_timer_send_event(app_ctx, 33, 0);
+    now_playing_animation_tick();
 }
 
 void tick_handler(AppContextRef app_ctx, PebbleTickEvent *event) {

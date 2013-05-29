@@ -21,3 +21,5 @@ void reset_sequence_number() {
     app_message_out_send();
     app_message_out_release();
 }
+
+AppContextRef g_app_context;

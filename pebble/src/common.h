@@ -61,4 +61,6 @@ typedef enum {
 AppMessageResult ipod_message_out_get(DictionaryIterator **iter_out);
 void reset_sequence_number();
 
+extern AppContextRef g_app_context;
+
 #endif

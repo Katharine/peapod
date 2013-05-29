@@ -44,6 +44,7 @@ static void display_no_album();
 
 static bool controlling_volume = false;
 static bool is_shown = false;
+static AppTimerHandle timer = 0;
 
 void show_now_playing() {
     window_init(&window, "Now playing");
@@ -56,6 +57,12 @@ void show_now_playing() {
 
 void now_playing_tick() {
     progress_bar_layer_set_value(&progress_bar, ipod_state_current_time());
+}
+
+void now_playing_animation_tick() {
+    if(!is_shown) return;
+    app_timer_cancel_event(g_app_context, timer);
+    timer = app_timer_send_event(g_app_context, 33, 1);
 }
 
 static void window_load(Window* window) {
@@ -117,6 +124,7 @@ static void window_load(Window* window) {
     ipod_state_set_callback(state_callback);
     request_now_playing();
     is_shown = true;
+    now_playing_animation_tick();
 }
 
 static void window_unload(Window* window) {

@@ -4,5 +4,6 @@
 
 void show_now_playing();
 void now_playing_tick();
+void now_playing_animation_tick();
 
 #endif
