@@ -79,8 +79,8 @@ static void window_load(Window* window) {
     action_bar_layer_set_click_config_provider(&action_bar, click_config_provider);
     controlling_volume = false;
     // Set default icon set.
-    action_bar_layer_set_icon(&action_bar, BUTTON_ID_UP, &icon_fast_forward.bmp);
-    action_bar_layer_set_icon(&action_bar, BUTTON_ID_DOWN, &icon_rewind.bmp);
+    action_bar_layer_set_icon(&action_bar, BUTTON_ID_DOWN, &icon_fast_forward.bmp);
+    action_bar_layer_set_icon(&action_bar, BUTTON_ID_UP, &icon_rewind.bmp);
     action_bar_layer_set_icon(&action_bar, BUTTON_ID_SELECT, &icon_play.bmp);
     
     // Text labels
@@ -155,7 +155,7 @@ static void click_config_provider(ClickConfig **config, void* context) {
 
 static void clicked_up(ClickRecognizerRef recognizer, void *context) {
     if(!controlling_volume) {
-        send_state_change(1);
+        send_state_change(-1);
     } else {
         send_state_change(64);
     }
@@ -165,7 +165,7 @@ static void clicked_select(ClickRecognizerRef recognizer, void *context) {
 }
 static void clicked_down(ClickRecognizerRef recognizer, void *context) {
     if(!controlling_volume) {
-        send_state_change(-1);
+        send_state_change(1);
     } else {
         send_state_change(-64);
     }
@@ -176,8 +176,8 @@ static void long_clicked_select(ClickRecognizerRef recognizer, void *context) {
         action_bar_layer_set_icon(&action_bar, BUTTON_ID_UP, &icon_volume_up.bmp);
         action_bar_layer_set_icon(&action_bar, BUTTON_ID_DOWN, &icon_volume_down.bmp);
     } else {
-        action_bar_layer_set_icon(&action_bar, BUTTON_ID_UP, &icon_fast_forward.bmp);
-        action_bar_layer_set_icon(&action_bar, BUTTON_ID_DOWN, &icon_rewind.bmp);
+        action_bar_layer_set_icon(&action_bar, BUTTON_ID_DOWN, &icon_fast_forward.bmp);
+        action_bar_layer_set_icon(&action_bar, BUTTON_ID_UP, &icon_rewind.bmp);
     }
 }
 
