@@ -13,10 +13,10 @@ static inline uint8_t pixelShade(uint8_t* i) {
 }
 
 static inline size_t offset(size_t width, size_t x, size_t y) {
-    return (y * width) + (x); // RGBA
+    return (x * width) + (y); // RGBA
 }
 
-#define DIFFUSE_ERROR(a, b) if((a) < width && (b) < height) grey[(b)*width+(a)] = MAX(0, MIN(255, grey[(b)*width+(a)] + (int16_t)(0.125 * (float)err)))
+#define DIFFUSE_ERROR(b,a) if((a) < width && (b) < height) grey[(b)*width+(a)] = MAX(0, MIN(255, grey[(b)*width+(a)] + (int16_t)(0.125 * (float)err)))
 
 @implementation KBPebbleImage
 
@@ -107,7 +107,7 @@ static inline size_t offset(size_t width, size_t x, size_t y) {
 	
 	CGColorSpaceRelease(colorSpace);
 	
-	return context;	
+	return context;
 }
 
 @end
