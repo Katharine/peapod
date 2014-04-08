@@ -20,15 +20,16 @@ static inline size_t offset(size_t width, size_t x, size_t y) {
 
 @implementation KBPebbleImage
 
-+ (NSData*)ditheredBitmapFromImage:(UIImage *)image withHeight:(NSUInteger)height width:(NSUInteger)width {
++ (NSData*)ditheredBitmapFromImage:(UIImage *)image withHeight:(NSUInteger)height width:(NSUInteger)originalWidth {
     if(!image) return nil;
-    // Resize it
+    
+    NSUInteger width = ceil((double) originalWidth / 32)*32;
     
     CGImageRef cg = image.CGImage;
     CGContextRef context = [self newBitmapRGBA8ContextFromImage:cg withHeight:height width:width];
     if(!context) return nil;
 	
-	CGRect rect = CGRectMake(0, 0, width, height);
+	CGRect rect = CGRectMake(0, 0, originalWidth, height);
 	
 	// Draw image into the context to get the raw image data
 	CGContextDrawImage(context, rect, cg);
