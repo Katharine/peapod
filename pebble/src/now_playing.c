@@ -110,7 +110,7 @@ static void window_load(Window* window) {
         .row_size_bytes = 8,
     };
     //memset(album_art_data, 0, 512);
-    bitmap_layer_init(&album_art_layer, GRect(30, 35, 64, 64));
+    bitmap_layer_init(&album_art_layer, GRect(20, 35, 64, 64));
     bitmap_layer_set_bitmap(&album_art_layer, &album_art_bitmap);
     layer_add_child(window_get_root_layer(window), &album_art_layer.layer);
     display_no_album();
@@ -209,6 +209,7 @@ static void app_in_received(DictionaryIterator *received, void* context) {
             size_t offset = tuple->value->data[0] * 104;
             memcpy(album_art_data + offset, tuple->value->data + 1, tuple->length - 1);
             layer_mark_dirty(&album_art_layer.layer);
+            layer_set_frame((Layer*)&album_art_layer, GRect(30, 35, 64, 64));
         }
     }
 }
@@ -232,5 +233,6 @@ static void state_callback(bool track_data) {
 
 static void display_no_album() {
     resource_load(resource_get_handle(RESOURCE_ID_ALBUM_ART_MISSING), album_art_data, 512);
+    layer_set_frame((Layer*)&album_art_layer, GRect(20, 35, 64, 64))
     layer_mark_dirty((Layer*)&album_art_layer);
 }
